@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Hello!</title>
+</head>
+
+<body>
+    <h3>Messages</h3>
+    <ul id="event-list">
+    </ul>
+    <ul id="message-list">
+    </ul>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+    <script>
+        const socket = io("http://localhost:8080/");
+        const addToList = (item, list) => {
+            let el = document.createElement("li");
+            el.innerText = JSON.stringify(item)
+            list.appendChild(el)
+        }
+        const messageList = document.getElementById("message-list");
+        const eventList = document.getElementById("event-list");
+
+        socket.on("message", message => {
+            addToList(message, messageList);
+        });
+
+        socket.on("event", (data) => {
+            console.log(`received event - ${JSON.stringify(data)}`)
+            addToList(data, eventList);
+        });
+
+        function sendMessage() {
+            socket.emit("message", "HELLO")
+        }
+    </script>
+</body>
+
+</html>

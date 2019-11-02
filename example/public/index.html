@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Hello!</title>
+    </head>
+    <body>
+        <h3>Messages</h3>
+        <ul id="list">
+        </ul>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+        <script>
+            const socket = io("http://localhost:8080/");
+            const addToList = item => {
+                let el = document.createElement("li");
+                el.innerText = JSON.stringify(data)
+                list.appendChild(el)
+            }
+            const list = document.getElementById("list");
+            socket.on("connect", () => {
+                console.log("CONNECTED")
+                sendMessage();
+                socket.on("event", data => {
+                    console.log("event", data)
+                });
+            })
+
+            function sendMessage() {
+                socket.emit("message", "HELLO")
+            }
+        </script>
+    </body>
+</html>
