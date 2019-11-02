@@ -9,27 +9,34 @@
     <h3>Messages</h3>
     <ul id="event-list">
     </ul>
-    <ul id="message-list">
-    </ul>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+    <script src="./static/js/utils.js"></script>
+    <script src="./static/js/models.js"></script>
     <script>
         const socket = io("http://localhost:8080/");
-        const addToList = (item, list) => {
-            let el = document.createElement("li");
-            el.innerText = JSON.stringify(item)
-            list.appendChild(el)
+        const messages = [];
+        window._events = new EventList();
+
+        const renderList = (name) => {
+            if (!window._events.dirty) {
+                return
+            }
+            console.log(name, window._events.length)
+            const parent = document.getElementById(name);
+            window._events.reverse().map(item => {
+                let el = document.createElement("li");
+                el.innerText = `Host: ${item.hostname}\tpid: ${item.pid}\ttype: ${item.type}\tuuid: ${item.uuid}`
+                parent.appendChild(el);
+            })
         }
-        const messageList = document.getElementById("message-list");
-        const eventList = document.getElementById("event-list");
 
-        socket.on("message", message => {
-            addToList(message, messageList);
+        socket.on("event", data => {
+            const event = TaskEvent.loadObject(data)
+            console.log("On Event: ", event['uuid'])
+            window._events.push(event)
         });
 
-        socket.on("event", (data) => {
-            console.log(`received event - ${JSON.stringify(data)}`)
-            addToList(data, eventList);
-        });
+        window.setInterval(() => renderList("event-list"), 1)
 
         function sendMessage() {
             socket.emit("message", "HELLO")
