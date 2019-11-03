@@ -1,15 +1,15 @@
 from celery import Celery
 import threading
-from celery.events import EventReceiver
 
 from asyncio import Queue
+import asyncio
 
 
 class EventPump(threading.Thread):
-    def __init__(self, capp: Celery, queue: Queue = None, *args, **kwargs):
+    def __init__(self, celery_app: Celery, queue: Queue = None, *args, **kwargs):
         threading.Thread.__init__(self, *args, **kwargs)
-        self.capp: Celery = capp
-        self.state = capp.events.State()
+        self.celery_app: Celery = celery_app
+        self.state = self.celery_app.events.State()
         self.run_attempts: int = 0
         self._queue = queue or Queue()
         self._active = True
@@ -28,13 +28,14 @@ class EventPump(threading.Thread):
 
     def run(self):
         self.run_attempts += 1
-        with self.capp.connection() as conn:
+        with self.celery_app.connection() as conn:
+            print("Have celery connection")
             while True:
                 try:
-                    recvr = self.capp.events.Receiver(
+                    receiver = self.celery_app.events.Receiver(
                         conn, handlers={"*": self.push_event}
                     )
-                    recvr.capture(limit=None, timeout=None, wakeup=True)
+                    receiver.capture(limit=None, timeout=None, wakeup=True)
                     self.run_attempts = 0
                 except Exception as e:
                     self.run_attempts += 1
@@ -42,10 +43,11 @@ class EventPump(threading.Thread):
                         print(f"Run failed. {3 - self.run_attempts} attempts left.")
                         self.run()
                     else:
-                        raise RuntimeError("Too many run attempts.")
+                        raise RuntimeError("Too many run attempts. ", e)
 
     async def iter_async(self):
         while self.is_pumping():
+            print("is pumping")
             if self._queue.not_empty:
                 yield self._queue.get()
-            yield
+            await asyncio.sleep(0.1)
