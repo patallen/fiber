@@ -1,44 +1,10 @@
 import React, {useEffect, useMemo, useReducer} from "react";
 import openSocket from "socket.io-client"
-import './App.css';
 import EventTable from "./components/EventTable";
-import MessageTable from "./components/EventTable";
+import MessageTable from "./components/MessageTable";
+import Container from "./components/Container"
 
-const initialEvents = {
-    events: [],
-    byId: new Map([])
-};
-
-function eventsReducer(state = initialEvents, action) {
-    switch (action.type) {
-        case 'SOCKET_RECEIVE_TASK_EVENT':
-        case 'SOCKET_RECEIVE_WORKER_EVENT': {
-            const messages = [action.payload, ...state.events];
-            const byId = new Map(messages.map(m => [m.uuid, m]));
-            return {byId, messages};
-        }
-        default:
-            return state
-    }
-}
-
-const initialMessages = {
-    messages: [],
-    byId: new Map([])
-};
-
-function messageReducer(state = initialMessages, action) {
-    switch (action.type) {
-        case 'SOCKET_RECEIVE_MESSAGE': {
-            const messages = [action.payload, ...state.messages];
-            const pairs = messages.map(m => [m.uuid, m]);
-            const byId = new Map(pairs);
-            return {byId, messages}
-        }
-        default:
-            return state
-    }
-}
+import './App.css';
 
 const initialSession = {
     socket: {
@@ -46,6 +12,53 @@ const initialSession = {
         sid: null,
     }
 };
+
+const initialData = {
+    messages: {
+        all: [],
+        byId: new Map([])
+    },
+    events: {
+        all: [],
+        byId: new Map([]),
+        lastHeartbeat: null,
+    },
+    tasks: {
+        all: [],
+        byId: new Map([])
+    },
+    meta: {
+        lastHeartbeat: null,
+    }
+};
+
+const dataReducer = (state = initialData, action) => {
+    switch (action.type) {
+        case 'SOCKET_RECEIVE_WORKER_EVENT': {
+            return {
+                ...state,
+                meta: {
+                    ...state.meta,
+                    lastHeartbeat: new Date(action.payload.timestamp * 1000),
+                }
+            }
+        }
+        case 'SOCKET_RECEIVE_TASK_EVENT': {
+            const all = [action.payload, ...state.events.all];
+            const byId = new Map(all.map(e => [e.uuid, e]));
+            return {...state, events: {...state.events, byId, all}};
+        }
+        case 'SOCKET_RECEIVE_MESSAGE': {
+            const all = [action.payload, ...state.messages.all];
+            const pairs = all.map(m => [m, m]);
+            const byId = new Map(pairs);
+            return {...state, messages: {...state.messages, byId, all}}
+        }
+        default:
+            return state
+    }
+};
+
 
 function sessionReducer(state = initialSession, action) {
     switch (action.type) {
@@ -68,6 +81,11 @@ const receiveSid = sid => ({
     payload: sid
 });
 
+const receiveWorkerEvent = data => ({
+    type: 'SOCKET_RECEIVE_WORKER_EVENT',
+    payload: data,
+});
+
 const receiveTaskEvent = data => ({
     type: 'SOCKET_RECEIVE_TASK_EVENT',
     payload: data,
@@ -82,46 +100,63 @@ const receiveMessage = message => ({
     payload: message
 });
 
+const Logo = () => <div style={{padding: "8px", fontSize: "24px"}}>Fiber</div>;
+const Status = ({lastHeartbeat}) => {
+    return <div style={{padding: "8px", fontSize: "24px"}}>
+        {lastHeartbeat ? lastHeartbeat.toISOString() : "N/A"}
+    </div>
+};
+
+function Header({lastHeartbeat}) {
+    return (
+        <div className="App-header">
+            <Logo />
+            <Status lastHeartbeat={lastHeartbeat} />
+        </div>
+    )
+}
+
 
 function App() {
+    const [data, dataDispatch] = useReducer(dataReducer, initialData);
     const [session, sessionDispatch] = useReducer(sessionReducer, initialSession);
-    const [events, eventDispatch] = useReducer(eventsReducer, initialEvents);
-    const [messages, messageDispatch] = useReducer(messageReducer, initialMessages);
+    const {tasks, meta, events, messages} = data;
     const hasSession = useMemo(() => !!session.socket.uuid, [session]);
 
     useEffect(() => {
         const socket = openSocket('http://fib.re:8080');
         socket.on('connect', data => {
-            console.log(`connected: data=${JSON.stringify(data, null, 2)}`);
             sessionDispatch(receiveSid(data))
         });
 
-        socket.on('disconnect', data => {
-            console.log(`disconnected: data=${JSON.stringify(data, null, 2)}`);
-            sessionDispatch(clearSessionData())
+        socket.on('disconnect', () => {
+            sessionDispatch(clearSessionData());
         });
 
         socket.on('message', data => {
-            console.log(`Message: data=${JSON.stringify(data, null, 2)}`);
-            if (data.type.startsWith("task-")) {
-                messageDispatch(receiveMessage(data))
-            }
+            dataDispatch(receiveMessage(data));
+        });
+
+        socket.on('task-update', data => {
+            console.log('task-update received', data);
         });
 
         socket.on('event', data => {
-            console.log(`Event: data=${JSON.stringify(data, null, 2)}`);
             if (data.type.startsWith("task-")) {
-                eventDispatch(receiveTaskEvent(data))
+                dataDispatch(receiveTaskEvent(data))
+            } else if (data.type.startsWith("worker-")) {
+                dataDispatch(receiveWorkerEvent(data))
             }
         });
-    });
-
-    const backgroundColor = hasSession ? "green" : "red";
+    }, []);
 
     return (
-        <div className="App" style={{backgroundColor}}>
-            <EventTable data={events}/>
-            <MessageTable data={messages} />
+        <div className="App">
+            <Header lastHeartbeat={meta.lastHeartbeat} />
+            <Container>
+                <EventTable events={events.all}/>
+            </Container>
+            <MessageTable messages={messages.all}/>
         </div>
     );
 }
