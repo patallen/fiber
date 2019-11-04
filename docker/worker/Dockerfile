@@ -10,4 +10,4 @@ RUN pip install -r requirements.txt
 COPY . /code
 WORKDIR /code
 
-CMD celery -E -A example.worker worker --loglevel=warn
+CMD celery -E -A example.worker worker --loglevel=warn --concurrency=2

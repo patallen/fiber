@@ -9,7 +9,6 @@ from example.models import CashFlowStatement
 
 class Encoder(json.JSONEncoder):
     def default(self, o):
-        print("TYPE", o)
         if isinstance(o, date):
             return {"__type__": "__date__", "epoch": o.isoformat()}
 
@@ -20,8 +19,6 @@ class Encoder(json.JSONEncoder):
 
 
 def decoder(o):
-    print("DECODE", o)
-
     if "__type__" in o:
         if o["__type__"] == "__date__":
             return date.fromisoformat(o["epoch"])

@@ -1,6 +1,6 @@
-from socketio import AsyncServer
 from sanic import Sanic
 from sanic_cors import CORS
+from socketio import AsyncServer
 
 sio = AsyncServer(async_mode='sanic', cors_allowed_origins=[])
 app = Sanic()

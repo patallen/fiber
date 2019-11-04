@@ -13,7 +13,7 @@ def index():
 
 
 @app.route("/cf/summary/<abbrev>")
-def cashflow_statement_summary(abbrev):
+def cash_flow_statement_summary(abbrev):
     result = chain(
         tasks.fetch_cashflow_statements.s(),
         tasks.serialize_cashflow_statements.s(),
