@@ -1,52 +1,73 @@
 version: '3'
 services:
 
-  worker-master:
-    hostname: worker
-    command: "poetry run flask run -p5000 -h0.0.0.0 --reload"
+  worker-1:
+    hostname: worker-1
+    container_name: worker-1
     build:
       context: .
-      dockerfile: ./docker/worker.Dockerfile
+      dockerfile: docker/worker/Dockerfile
     volumes:
     - .:/code
     links:
     - redis
     - rabbitmq
 
+  worker-2:
+    hostname: worker-2
+    container_name: worker-2
+    build:
+      context: .
+      dockerfile: docker/worker/Dockerfile
+    volumes:
+      - .:/code
+    links:
+      - redis
+      - rabbitmq
+
   web:
+    container_name: web
     hostname: web
     build:
       context: .
-      dockerfile: ./docker/app.Dockerfile
+      dockerfile: docker/example/Dockerfile
     ports:
     - "5000:5000"
     volumes:
     - .:/code
     links:
     - rabbitmq
-    - worker-master
+    - worker-1
+    - worker-2
+    - redis
 
   fiber:
+    container_name: fiber
     hostname: fiber
     build:
       context: .
-      dockerfile: ./docker/fiber.Dockerfile
+      dockerfile: docker/fiber/Dockerfile
     links:
+    - web
+    - worker-1
+    - worker-2
     - rabbitmq
     environment:
       WEBSOCKET_HOST: 0.0.0.0
       WEBSOCKET_PORT: 8080
     volumes:
-    - .:/code
+      - .:/code
     ports:
     - "8080:8080"
 
   redis:
     hostname: redis 
     image: redis
+    container_name: redis
 
   rabbitmq:
     ports:
     - "15672:15672"
     hostname: rabbitmq
+    container_name: rabbitmq
     image: rabbitmq:3-management
