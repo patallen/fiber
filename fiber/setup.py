@@ -1,11 +1,11 @@
 from distutils.core import setup
 
 install_requires = (
-    'celery==4.3',
-    'requests==2.22.0',
-    'sanic==19.9.0',
-    'python-socketio==4.3',
-    'urllib3==1.25.3',
+    "celery==4.3",
+    "requests==2.22.0",
+    "sanic==19.9.0",
+    "python-socketio==4.3",
+    "urllib3==1.25.3",
 )
 
 setup(
@@ -15,9 +15,5 @@ setup(
     packages=["fiber"],
     license="MIT",
     long_description=open("README.txt").read(),
-    entry_points={
-        'console_scripts': [
-            'fib = fiber.app:main',
-        ],
-    },
+    entry_points={"console_scripts": ["fib = fiber.app:main",],},
 )

@@ -1,61 +1,29 @@
 import logging
-
 from dataclasses import dataclass
 
 from sanic import Blueprint
 from sanic.response import html
 
-from fiber.engine import Engine
+from fiber.events import Sender
 from fiber.server import sio
 
-engine = Engine(sio)
-sender = engine.sender
+log = logging.getLogger("fiber.api")
 
-log = logging.getLogger('fiber.api')
-
-bp = Blueprint("api", url_prefix="api")
+sender = Sender(sio)
 
 
-@dataclass
-class Serializable:
-
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-
-    @classmethod
-    def serialize(cls, data):
-        return cls(**data)
-
-
-class PreloadRequest(Serializable):
-    user_sid: str
-    section_id: str
-
-    def to_json(self):
-        return {
-            'user_sid': self.user_sid,
-            'section_id': self.section_id,
-        }
-
-
-@sio.on('disconnect')
+@sio.on("disconnect")
 async def on_disconnect(sid):
-    sio.leave_room(sid, 'global')
+    sio.leave_room(sid, "global")
     await sender.message(sid, f"Good bye!")
-    log.debug('disconnected: %s', sid)
+    log.debug("disconnected: %s", sid)
 
 
-@sio.on('connect')
+@sio.on("connect")
 async def on_connect(sid, environ):
-    sio.leave_room(sid, 'global')
+    sio.leave_room(sid, "global")
     await sender.message(sid, "Welcome Home!")
-    log.debug('connected: %s', sid)
-
-
-@bp.route("/", methods=["GET", "OPTIONS"])
-async def index(_request):
-    with open("fiber/public/index.html") as f:
-        return html(f.read())
+    log.debug("connected: %s", sid)
 
 
 def serialize(serializable_cls):
