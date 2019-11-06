@@ -1,0 +1,124 @@
+#! /usr/local/bin/python3
+
+import argparse
+import logging
+import random
+import time
+import urllib3
+
+from datetime import datetime
+
+logging.basicConfig(level=logging.INFO, format="[%(levelname)5s] %(message)s")
+log = logging.getLogger("hug")
+
+
+STOCK_SYMBOLS = ["AMZN", "AAPL", "MSFT", "DENN", "BA", "MSCI"]
+
+
+def main():
+    """Handles execution of ongoing task dispatching.
+
+    Examples:
+      ./hug --interval 10
+      ./hug --random 2 9
+      ./hug --verbose --interval 10
+    """
+    parser = create_parser()
+    args = parser.parse_args()
+
+    if args.verbose:
+        log.setLevel(logging.DEBUG)
+
+    timer = timer_from_args(args)
+    http = urllib3.PoolManager(2)
+
+    try:
+        for _ in timer:
+            url = random_url()
+            log.info(f"Sending calulation request for {url}")
+            result = http.request("GET", url)
+    except KeyboardInterrupt:
+        print("Cool. Great session. Let's do it again soon, bro.")
+
+
+def create_parser():
+    """Build the command line argument parser."""
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-i",
+        "--interval",
+        metavar="SECONDS",
+        type=int,
+        help="Time between tasks in seconds.",
+    )
+    parser.add_argument(
+        "-r",
+        "--random",
+        nargs=2,
+        metavar="SECONDS",
+        type=int,
+        help="Use an interval time in seconds between two numbers.",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Output additional debug and meta information.",
+    )
+
+    return parser
+
+
+def random_url():
+    index = random.randint(0, len(STOCK_SYMBOLS) - 1)
+    symbol = STOCK_SYMBOLS[index]
+    return f"http://localhost:5000/cf/summary/{symbol}"
+
+
+class Interval:
+    def __init__(self, interval):
+        self.interval = interval
+
+    def __iter__(self):
+        while True:
+            time.sleep(self.interval)
+            yield
+
+
+class RandomInterval:
+    def __init__(self, low, high):
+        self.low = low
+        self.high = high
+
+    def _random_interval(self):
+        range_size = self.high - self.low
+        inner_random = random.random() * range_size
+        return self.low + inner_random
+
+    def __iter__(self):
+        while True:
+            yield
+            current_time = time.time()
+            interval = self._random_interval()
+            log.debug(
+                "Interval set to %.2f seconds. Holding until %s",
+                interval,
+                datetime.fromtimestamp(current_time + interval).strftime("%I:%M:%S%p"),
+            )
+            time.sleep(interval)
+
+
+def timer_from_args(args):
+    if args.interval:
+        return Interval(args.interval)
+
+    if args.random:
+        low, high = args.random
+        return RandomInterval(low, high)
+
+    raise RuntimeError("Invalid arguments. --interval or --random required.")
+
+
+if __name__ == "__main__":
+    main()
