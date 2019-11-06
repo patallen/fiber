@@ -132,6 +132,7 @@ const WORKERS = [
         hostname: 'celery@worker-1',
         status_string: 'ONLINE',
         processed: 921,
+        failed: 0,
         uptime: 1029120.0,
         active: 1,
         current_task: 'example.calculate_it_all'
@@ -139,8 +140,18 @@ const WORKERS = [
     {
         hostname: 'celery@worker-2',
         status_string: 'ONLINE',
+        failed: 0,
         processed: 829,
         uptime: 102999.0,
+        active: 0,
+        current_task: 'N/A'
+    },
+    {
+        hostname: 'celery@worker-3',
+        status_string: 'OFFLINE',
+        failed: 22,
+        processed: 0,
+        uptime: 0.0,
         active: 0,
         current_task: 'N/A'
     }
@@ -173,6 +184,7 @@ function WorkerCard({ worker }) {
             <Status status={worker.status_string} />
         </div>
         <AttributeItem value={worker.processed} label="Processed" />
+        <AttributeItem value={worker.failed} label="Failed" />
         <AttributeItem value={worker.active} label="Active" />
         <AttributeItem value={worker.uptime} label="Uptime" />
     </div>
