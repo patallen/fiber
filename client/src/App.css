@@ -7,6 +7,16 @@
   min-width: 100vw;
   min-height: 100vh;
 }
+.drawer .drawer-content {
+  transition: 0.2s ease-in-out;
+}
+.drawer.drawer-open .drawer-content {
+  height: 240px;
+}
+
+.drawer.drawer-closed .drawer-content {
+  height: 1px;
+}
 
 .Container {
   padding: 12px;

@@ -1,12 +1,18 @@
 import React, {useEffect, useReducer} from "react";
 import openSocket from "socket.io-client"
 import AutoResizer from "react-base-table/lib/AutoResizer";
-import EventTable from "./components/EventTable";
-import MessageTable from "./components/MessageTable";
+import MessageDrawer from "./components/MessageDrawer";
 import TaskTable from "./components/TaskTable";
 import Container from "./components/Container"
 
 import './App.css';
+
+import { library } from '@fortawesome/fontawesome-svg-core'
+import {faChevronDown, faChevronUp} from "@fortawesome/free-solid-svg-icons"
+
+library.add(faChevronDown, faChevronUp);
+
+
 
 const initialSession = {
     socket: {
@@ -33,6 +39,7 @@ const initialData = {
         byId: {}
     }
 };
+
 
 class Task {
     constructor({name, uuid, processed, active, args, kwargs, eta, received_at}) {
@@ -296,15 +303,14 @@ function App() {
             <Header/>
             <WorkersOverview workers={ordered(workers)}/>
             <Container style={{width: "100%"}}>
-                <AutoResizer height={400}>
+                <AutoResizer height={500}>
                     {({width, height}) => {
                         console.log(width, height);
                         return <TaskTable width={width} height={height} tasks={ordered(tasks)} />
                     }}
                 </AutoResizer>
-                <EventTable events={ordered(events)}/>
             </Container>
-            <MessageTable messages={ordered(messages)}/>
+            <MessageDrawer messages={ordered(messages)}/>
         </div>
     );
 }

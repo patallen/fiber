@@ -1,4 +1,5 @@
-import React from "react";
+import React, {useState} from "react";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
 const styles = {
     message: {
@@ -8,7 +9,9 @@ const styles = {
         textAlign: "left",
     },
     messageBoxHeader: {
-        padding: "12px 10px",
+        padding: "14px 18px",
+        display: "flex",
+        justifyContent: "space-between",
         color: "#333333",
         textAlign: "left",
         backgroundColor: "#f8f8f8",
@@ -22,7 +25,6 @@ const styles = {
         position: 'absolute',
         backgroundColor: "white",
         width: '300px',
-        height: '300px',
         overflow: 'hidden',
         right: 0,
         bottom: 0,
@@ -30,22 +32,27 @@ const styles = {
 };
 
 const Message = ({message}) => <div style={styles.message}>{message}</div>;
-const MessageBoxHeader = ({children}) => (
+const MessageBoxHeader = ({children, icon, onToggleOpen}) => (
     <div style={styles.messageBoxHeader}>
         <span>{children}</span>
-        <span className="glyphicon glyphicon-plus" />
+        <FontAwesomeIcon icon={['fa', icon]} onClick={onToggleOpen}/>
     </div>
 );
 
-export default function MessageBox({messages}) {
+export default function MessageDrawer({messages}) {
+    const [isOpen, setOpen] = useState(false);
+    const className = "drawer drawer-" + (isOpen ? "open" : "closed");
+    console.log("classname", className);
     return (
-        <div style={styles.messageBox}>
-            <MessageBoxHeader>Messages</MessageBoxHeader>
+        <div style={styles.messageBox} className={className}>
+            <MessageBoxHeader onToggleOpen={() => setOpen(!isOpen)} icon={isOpen ? "chevron-down" : "chevron-up"}>Messages</MessageBoxHeader>
+            <div className="drawer-content">
             {
                 messages.map(m => (
                     <Message key={m.uuid} message={m.body} />
                 ))
             }
+            </div>
         </div>
     )
 }

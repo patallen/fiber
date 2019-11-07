@@ -10,7 +10,7 @@ export default function TaskTable({tasks, width, height}) {
             <Column key="name" dataKey="name" title="Name" width={300} />
             <Column key="state" dataKey="state" title="State" width={140} />
             <Column key="runtime" dataGetter={({rowData}) => {
-                if (rowData.runtime !== undefined) {
+                if (rowData.runtime) {
                     return rowData.runtime.toFixed(2) + " seconds"
                 }
             }} title="Runtime" width={140} />
