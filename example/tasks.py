@@ -2,12 +2,14 @@ from example.models import CashFlowStatement
 import requests
 
 from example.worker import app
+import time
 
 BASE_URL = "https://financialmodelingprep.com/api/v3/financials/cash-flow-statement"
 
 
 @app.task
 def fetch_cashflow_statements(abbrev):
+    time.sleep(1)
     return requests.get(f"{BASE_URL}/{abbrev}").json()["financials"]
 
 

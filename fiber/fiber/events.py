@@ -15,6 +15,46 @@ from fiber.utils import standard_sleep
 log = logging.getLogger("fabric.events")
 
 
+class Domain(enum.Enum):
+    WORKERS = "WORKERS"
+    TASKS = "TASKS"
+
+
+class EventId(int):
+    pass
+
+
+class WorkerAction(enum.Enum):
+    HEARTBEAT = "HEARTBEAT"
+    ONLINE = "ONLINE"
+    OFFLINE = "OFFLINE"
+
+
+class Action(enum.Enum):
+    CREATE = "CREATE"
+    UPDATE = "UPDATE"
+
+
+class Serializer:
+    @staticmethod
+    def to_dict(event: "Event") -> dict:
+        raise NotImplementedError
+
+    @staticmethod
+    def from_dict(adict: dict) -> "Event":
+        raise NotImplementedError
+
+
+class Event:
+    serializer: Serializer = None
+
+    def encode(self, adict: dict) -> "Event":
+        return self.serializer.from_dict(adict)
+
+    def decode(self) -> dict:
+        return self.serializer.to_dict(self)
+
+
 class WorkerEventType(enum.Enum):
     ONLINE = "worker-online"
     OFFLINE = "worker-offline"
