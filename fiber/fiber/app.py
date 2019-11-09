@@ -35,10 +35,9 @@ async def runner(celery_app: celery.Celery, event_filter: EventFilter = None):
 
 
 def create_task(event):
-    import pprint
-    pprint.pprint(event)
     return dict(
         action="LOAD_TASK",
+        timestamp=event["timestamp"],
         payload=dict(
             args=event["args"],
             kwargs=event["kwargs"],
@@ -48,28 +47,37 @@ def create_task(event):
             uuid=event["uuid"],
             parent_id=event["parent_id"],
             expires=event["expires"],
-            created_at=event['timestamp']
+            created_at=event['timestamp'],
+            worker_id=make_worker_id(event),
         ),
-        worker=dict(id=make_worker_id(event), hostname=event["hostname"], pid=event["pid"]),
-        timestamp=event["timestamp"],
-        clock=event["clock"],
     )
 
 
 def update_task(event):
-    print(event)
     return dict(
         action="UPDATE_TASK",
         type=event['type'],
+        timetamp=event["timestamp"],
         payload=dict(
             uuid=event["uuid"],
             state=event["state"],
             result=event.get('result'),
             runtime=event.get('runtime'),
         ),
-        worker=dict(id=make_worker_id(event), hostname=event["hostname"], pid=event["pid"]),
+    )
+
+
+def complete_task(event):
+    return dict(
+        action="COMPLETE_TASK",
+        type=event['type'],
         timetamp=event["timestamp"],
-        clock=event["clock"],
+        payload=dict(
+            uuid=event['uuid'],
+            state=event['state'],
+            runtime=event['runtime'],
+            result=event['result'],
+        )
     )
 
 
@@ -77,10 +85,11 @@ def make_worker_id(event):
     return f"{event['hostname']}.{event['pid']}"
 
 
-def create_worker(event):
+def bring_worker_online(event):
     return dict(
-        action="LOAD_WORKER",
+        action="BRING_WORKER_ONLINE",
         type=event['type'],
+        timestamp=event['timestamp'],
         payload=dict(
             id=make_worker_id(event),
             hostname=event['hostname'],
@@ -90,8 +99,9 @@ def create_worker(event):
             loadavg=event.get('loadavg'),
             clock=event.get('clock'),
             state=event.get('state'),
-        ),
-        timestamp=event['timestamp']
+            online_at=event['timestamp'],
+            status="ONLINE"
+        )
     )
 
 
@@ -107,7 +117,21 @@ def update_worker(event):
             processed=event.get("processed", 0),
             loadavg=event.get("loadavg"),
             clock=event['clock'],
-            state=event.get('state')
+            status="ONLINE",
+        ),
+        timestamp=event["timestamp"],
+    )
+
+
+def take_worker_offline(event):
+    return dict(
+        action="TAKE_WORKER_OFFLINE",
+        type=event['type'],
+        payload=dict(
+            id=make_worker_id(event),
+            active=False,
+            offline_at=event['timestamp'],
+            status="OFFLINE"
         ),
         timestamp=event["timestamp"],
     )
@@ -118,13 +142,17 @@ def translate_event(event):
     if domain == "task":
         if event_type == "received":
             return create_task(event)
-        if event_type in ("started", "succeeded", "failed"):
+        if event_type == "started":
             return update_task(event)
+        if event_type in ("succeeded", "failed"):
+            return complete_task(event)
     elif domain == "worker":
         if event_type == "online":
-            return create_worker(event)
-        if event_type in ("online", "heartbeat"):
+            return bring_worker_online(event)
+        if event_type == "heartbeat":
             return update_worker(event)
+        if event_type == "offline":
+            return take_worker_offline(event)
     raise RuntimeError
 
 

@@ -42,7 +42,6 @@ const MessageBoxHeader = ({children, icon, onToggleOpen}) => (
 export default function MessageDrawer({messages}) {
     const [isOpen, setOpen] = useState(false);
     const className = "drawer drawer-" + (isOpen ? "open" : "closed");
-    console.log("classname", className);
     return (
         <div style={styles.messageBox} className={className}>
             <MessageBoxHeader onToggleOpen={() => setOpen(!isOpen)} icon={isOpen ? "chevron-down" : "chevron-up"}>Messages</MessageBoxHeader>

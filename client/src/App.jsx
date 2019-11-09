@@ -4,7 +4,8 @@ import AutoResizer from "react-base-table/lib/AutoResizer";
 import MessageDrawer from "./components/MessageDrawer";
 import TaskTable from "./components/TaskTable";
 import Container from "./components/Container"
-
+import {StatusBadge} from "./components/Badge";
+import * as actions from "./actions";
 import './App.css';
 
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -12,7 +13,13 @@ import {faChevronDown, faChevronUp} from "@fortawesome/free-solid-svg-icons"
 
 library.add(faChevronDown, faChevronUp);
 
-
+const renderStatus = status => {
+    if (status === 'ONLINE') {
+        return <StatusBadge online/>
+    } else {
+        return <StatusBadge offline/>
+    }
+};
 
 const initialSession = {
     socket: {
@@ -41,67 +48,50 @@ const initialData = {
 };
 
 
-class Task {
-    constructor({name, uuid, processed, active, args, kwargs, eta, received_at}) {
-        this.name = name;
-        this.uuid = uuid;
-        this.processed = processed;
-        this.active = active;
-        this.args = args;
-        this.kwargs = kwargs;
-        this.eta = eta;
-        this.received_at = received_at
-    }
-}
-
-class Worker {
-    constructor({status, hostname, processed, active, args, kwargs, eta, received_at}) {
-        this.hostname = hostname;
-        this.processed = processed;
-        this.active = active;
-        this.args = args;
-        this.kwargs = kwargs;
-        this.eta = eta;
-        this.received_at = received_at
-        this.status = status || "ONLINE"
-    }
-}
-
 const dataReducer = (state = initialData, action) => {
     switch (action.type) {
         case 'LOAD_TASK': {
-            const task = new Task({...action.payload});
             const tasks = {...state.tasks};
-            tasks.byId[task.uuid] = task;
-            tasks.ids.unshift(task.uuid);
-            return {
-                ...state,
-                tasks,
-            }
+            tasks.byId[action.payload.uuid] = action.payload;
+            tasks.ids.unshift(action.payload.uuid);
+            return { ...state,  tasks }
         }
         case 'UPDATE_TASK': {
             const tasks = {...state.tasks};
-            console.log(action.payload);
-            let task = tasks.byId[action.payload.uuid];
+            const task = {...tasks.byId[action.payload.uuid]};
             tasks.byId[action.payload.uuid] = {...task, ...action.payload};
             return {
                 ...state,
-                tasks,
+                tasks: {
+                    ...state.tasks,
+                    [action.payload.uuid]: {...task}
+                }
             }
+        }
+        case "COMPLETE_TASK": {
+            const tasks = {...state.tasks};
+            tasks.byId[action.payload.uuid] = {...tasks.byId[action.payload.uuid], ...action.payload};
+            return {...state,  tasks}
+        }
+        case "TAKE_WORKER_OFFLINE": {
+            const workers = {...state.workers};
+            Object.assign(workers.byId[action.payload.id], action.payload);
+            return {...state, workers};
+        }
+        case "BRING_WORKER_ONLINE": {
+            const workers = {...state.workers};
+            workers.byId[action.payload.id] = action.payload;
+            return {...state, workers};
         }
         case 'UPDATE_WORKER': {
             const workers = {...state.workers};
             let worker = workers.byId[action.payload.id];
             let id = action.payload.id;
-            console.log(action.payload);
             if (workers.byId[id] === undefined) {
                 workers.ids.push(action.payload.id)
             }
-            workers.byId[action.payload.id] = {...worker, ...action.payload, status: "ONLINE"};
-            return {
-                ...state,
-                workers: {...workers}
-            }
+            workers.byId[action.payload.id] = {...worker, ...action.payload};
+            return {...state,  workers}
         }
         default:
             return state
@@ -125,73 +115,6 @@ function sessionReducer(state = initialSession, action) {
     }
 }
 
-const receiveSid = sid => ({
-    type: 'SOCKET_RECEIVE_SID',
-    payload: sid
-});
-
-const clearSessionData = () => ({
-    type: 'SOCKET_CLEAR_SESSION_DATA',
-});
-
-const receiveMessage = message => ({
-    type: 'SOCKET_RECEIVE_MESSAGE',
-    payload: message
-});
-
-const StatusBadge = ({online}) => {
-    const text = online ? "Online" : "Offline";
-    const color = online ? "#1daf1d" : "red";
-    return <span style={{
-        backgroundColor: color,
-        padding: '2px 4px',
-        color: "white",
-        fontSize: "11px",
-        borderRadius: '2px'
-    }}>{text}</span>
-};
-
-const renderStatus = status => {
-    if (status === 'ONLINE') {
-        return <StatusBadge online/>
-    } else {
-        return <StatusBadge offline/>
-    }
-};
-
-const loadTask = ({payload, type}) => {
-    return {
-        type: "LOAD_TASK",
-        payload,
-        meta: {type}
-    }
-};
-
-const updateTask = ({payload, type}) => {
-    return {
-        type: "UPDATE_TASK",
-        payload,
-        meta: {type}
-    }
-};
-
-const updateWorker = ({payload, type}) => {
-    return {
-        type: "UPDATE_WORKER",
-        payload,
-        meta: {type}
-    }
-};
-
-const addEvent = ({payload, type}) => {
-    return {
-        type: "ADD_EVENT",
-        payload,
-        meta: {
-            type
-        }
-    }
-};
 
 const Logo = () => <div style={{padding: "8px", fontSize: "24px"}}>Fiber</div>;
 const Status = ({status}) => {
@@ -269,28 +192,36 @@ function App() {
     useEffect(() => {
         const socket = openSocket('http://localhost:8080');
         socket.on('connect', data => {
-            sessionDispatch(receiveSid(data))
+            sessionDispatch(actions.receiveSid(data))
         });
 
         socket.on('disconnect', () => {
-            sessionDispatch(clearSessionData());
+            sessionDispatch(actions.clearSessionData());
         });
 
         socket.on('message', data => {
-            dataDispatch(receiveMessage(data));
+            dataDispatch(actions.receiveMessage(data));
         });
 
         socket.on('event', event => {
             switch (event.action) {
                 case "LOAD_TASK":
-                    dataDispatch(loadTask(event));
+                    dataDispatch(actions.loadTask(event));
                     break;
                 case "UPDATE_TASK":
-                    dataDispatch(updateTask(event));
+                    dataDispatch(actions.updateTask(event));
                     break;
                 case "UPDATE_WORKER":
-                    dataDispatch(updateWorker(event));
-
+                    dataDispatch(actions.updateWorker(event));
+                    break;
+                case "TAKE_WORKER_OFFLINE":
+                    dataDispatch(actions.takeWorkerOffline(event));
+                    break;
+                case "BRING_WORKER_ONLINE":
+                    dataDispatch(actions.bringWorkerOnline(event));
+                    break;
+                case "COMPLETE_TASK":
+                    dataDispatch(actions.completeTask(event));
                     break;
                 default:
                     console.error(`${event.action} is not a valid action type.`)
@@ -305,7 +236,6 @@ function App() {
             <Container style={{width: "100%"}}>
                 <AutoResizer height={500}>
                     {({width, height}) => {
-                        console.log(width, height);
                         return <TaskTable width={width} height={height} tasks={ordered(tasks)} />
                     }}
                 </AutoResizer>

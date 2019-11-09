@@ -1,8 +1,4 @@
 import logging
-from dataclasses import dataclass
-
-from sanic import Blueprint
-from sanic.response import html
 
 from fiber.events import Sender
 from fiber.server import sio
