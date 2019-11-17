@@ -1,10 +1,17 @@
 import React, {useEffect, useReducer} from "react";
 import openSocket from "socket.io-client"
+import {
+    BrowserRouter as Router,
+    Switch,
+    Route,
+    Link
+  } from "react-router-dom";
 import AutoResizer from "react-base-table/lib/AutoResizer";
 import MessageDrawer from "./components/MessageDrawer";
 import TaskTable from "./components/TaskTable";
 import Container from "./components/Container"
 import {StatusBadge} from "./components/Badge";
+import styled, { css } from 'styled-components'
 import * as actions from "./actions";
 import './App.css';
 
@@ -12,6 +19,38 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import {faChevronDown, faChevronUp} from "@fortawesome/free-solid-svg-icons"
 
 library.add(faChevronDown, faChevronUp);
+
+// Styled Components
+
+const NavBar = styled.div`
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 700;
+    font-size: 16px;
+    width: 100%;
+    list-style: none;
+    text-align: center;
+    position: relative;
+    z-index: 33;
+`;
+
+const UL = styled.ul`
+    //  width: 100%;
+    margin: 0;
+    padding: 0;
+`;
+
+const LI = styled.li`
+    display: inline-block;
+    padding-right: 25px;
+`;
+
+const A = styled.a`
+    text-decoration: none;
+    color: #000;
+`;
 
 const renderStatus = status => {
     if (status === 'ONLINE') {
@@ -123,10 +162,65 @@ const Status = ({status}) => {
     </div>
 };
 
-function Header() {
-    return (
-        <div className="App-header"><Logo/></div>
+
+function Nav({workers,tasks}) {
+    return(
+        <Router>
+            <div>
+                <NavBar>
+                    <Logo/>
+                    <UL>
+                        <LI>
+                            <Link to="/" style={{textDecoration: 'None', color: '#000'}}>Home</Link>
+                        </LI>
+                        <LI>
+                            <Link to="/notifications" style={{textDecoration: 'None', color: '#000'}}>Notifications</Link>
+                        </LI>
+                        <LI>
+                            <Link to="/events" style={{textDecoration: 'None', color: '#000'}}>Events</Link>
+                        </LI>
+                    </UL>
+                </NavBar>
+
+            {/* A <Switch> looks through its children <Route>s and
+                renders the first one that matches the current URL. */}
+                <Switch>
+                    <Route path="/notifications">
+                    <Notifications />
+                    </Route>
+                    <Route path="/events">
+                    <Events />
+                    </Route>
+                    <Route path="/">
+                    <Home workers={workers} tasks={tasks}/>
+                    </Route>
+                </Switch>
+            </div>
+        </Router>
     )
+}
+
+function Home({workers, tasks}) {
+    return(
+        <>
+            <WorkersOverview workers={ordered(workers)}/>
+            <Container style={{width: "100%"}}>
+                <AutoResizer height={500}>
+                    {({width, height}) => {
+                        return <TaskTable width={width} height={height} tasks={ordered(tasks)} />
+                    }}
+                </AutoResizer>
+            </Container>
+        </>
+    );
+}
+
+function Events() {
+    return <></>;
+}
+
+function Notifications() {
+    return <></>;
 }
 
 const Hostname = ({children}) => <div style={{color: '#323332', fontWeight: 500, fontSize: '13px'}}>{children}</div>
@@ -148,6 +242,8 @@ const Label = ({children}) => (
         {children}
     </div>
 );
+
+
 
 
 function WorkerCard({worker}) {
@@ -231,15 +327,7 @@ function App() {
 
     return (
         <div className="App">
-            <Header/>
-            <WorkersOverview workers={ordered(workers)}/>
-            <Container style={{width: "100%"}}>
-                <AutoResizer height={500}>
-                    {({width, height}) => {
-                        return <TaskTable width={width} height={height} tasks={ordered(tasks)} />
-                    }}
-                </AutoResizer>
-            </Container>
+            <Nav workers={workers} tasks={tasks}/>
             <MessageDrawer messages={ordered(messages)}/>
         </div>
     );
