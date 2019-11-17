@@ -60,7 +60,7 @@ services:
   flower:  
     image: mher/flower
     environment:
-    - CELERY_BROKER_URL=redis://redis:6379/0
+    - CELERY_BROKER_URL=amqp://rabbitmq
     - FLOWER_PORT=8888
     ports:  
     - 8888:8888
