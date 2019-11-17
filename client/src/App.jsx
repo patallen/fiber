@@ -250,7 +250,7 @@ function WorkerCard({worker}) {
     return <div style={{
         margin: '6px',
         display: 'flex',
-        minWidth: "240px",
+        minWidth: '240px',
         borderRadius: "4px",
         padding: '6px 10px',
         border: '1px solid #BBBBBB',
@@ -274,7 +274,7 @@ function WorkerCard({worker}) {
 
 function WorkersOverview({workers = []}) {
     return (
-        <div style={{display: 'flex', padding: "0 12px", maxWidth: '100vw', overflowX: 'scroll'}}>
+        <div style={{display: 'flex', padding: "0 12px", maxWidth: '100vw', minHeight: '100px', overflowX: 'scroll'}}>
             {workers.map(worker => <WorkerCard key={worker.id} worker={worker}/>)}
         </div>
     )
