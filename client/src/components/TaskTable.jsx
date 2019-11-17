@@ -16,10 +16,17 @@ export default function TaskTable({tasks, width, height}) {
                 return <TaskStateBadge state={taskState} backgroundColor="blue">{taskState}</TaskStateBadge>
             }} title="State" width={140}/>
             <Column key="runtime" dataGetter={({rowData}) => {
+                // Fine for now but the time is not actively incrementing
                 if (rowData.runtime) {
-                    return rowData.runtime.toFixed(4) + " seconds"
-                } else {
-                    return (new Date().getUTCMilliseconds() - rowData.created_at) / 1000.0 + " seconds"
+                    if (rowData.runtime.toFixed(3) >= 1) {
+                        return rowData.runtime.toFixed(2) + ' s'
+                     }
+                    return rowData.runtime.toFixed(3) * 1000 + " ms"
+                }
+                 else {
+                    console.log('New Date', new Date().getTime())
+                    console.log('Created at', rowData.created_at)
+                    return ((new Date().getTime() - (rowData.created_at * 1000)).toFixed(3)) + " ms"
                 }
             }} title="Runtime" width={140} />
             <Column key="created_at" dataGetter={({rowData}) => new Date(rowData.created_at * 1000).toLocaleString({
