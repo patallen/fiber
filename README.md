@@ -1,5 +1,7 @@
-# :poop::peach: To be beautified by @BelminD :cocktail:
+# ℉iber 
+A New Celery Monitoring Tool
 
+## Installation
 Run the backend containers:
 ```bash
 docker-compose up
