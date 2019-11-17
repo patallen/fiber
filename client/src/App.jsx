@@ -116,7 +116,7 @@ function sessionReducer(state = initialSession, action) {
 }
 
 
-const Logo = () => <div style={{padding: "8px", fontSize: "24px"}}>Fiber</div>;
+const Logo = () => <div style={{padding: "8px", fontSize: "24px", fontWeight:400}}>Fiber</div>;
 const Status = ({status}) => {
     return <div style={{fontSize: "14px"}}>
         {renderStatus(status)}
