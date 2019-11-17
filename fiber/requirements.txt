@@ -5,3 +5,6 @@ sanic-cors==0.9.9.post3
 python-socketio==4.3
 urllib3==1.25.3
 uvloop==0.13.0
+pandas==0.25.3
+numpy==1.17.4
+python_dateutil==2.8.1
