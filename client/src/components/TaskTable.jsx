@@ -24,8 +24,6 @@ export default function TaskTable({tasks, width, height}) {
                     return rowData.runtime.toFixed(3) * 1000 + " ms"
                 }
                  else {
-                    console.log('New Date', new Date().getTime())
-                    console.log('Created at', rowData.created_at)
                     return ((new Date().getTime() - (rowData.created_at * 1000)).toFixed(3)) + " ms"
                 }
             }} title="Runtime" width={140} />
