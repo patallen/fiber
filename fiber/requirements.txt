@@ -1,4 +1,4 @@
-celery==4.3
+celery==5.2.2
 requests==2.22.0
 sanic==19.9.0
 sanic-cors==0.9.9.post3
